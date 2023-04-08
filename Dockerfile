@@ -6,6 +6,8 @@ ARG star_version=2.7.10a_alpha_220818
 ARG samtools_version=1.15.1
 ARG bbmap_version=38.97
 ARG rsem_version=1.3.3
+ARG subread_version=2.0.2
+ARG salmon_version=1.10.0
 
 #Install OS packages
 RUN apt-get update && apt-get -y --no-install-recommends -qq install \
@@ -48,12 +50,25 @@ RUN wget https://github.com/deweylab/RSEM/archive/refs/tags/v${rsem_version}.tar
     make && \
     cd / && rm v${rsem_version}.tar.gz
 
-ENV PATH="${PATH}:/opt/STAR-${star_version}/source:/opt/seqtk:/opt/bbmap:/opt/RSEM-${rsem_version}"     
+#Install Subread (for featureCounts)
+RUN wget https://github.com/ShiLab-Bioinformatics/subread/releases/download/${subread_version}/subread-${subread_version}-Linux-x86_64.tar.gz && \ 
+    tar -xvf subread-${subread_version}-Linux-x86_64.tar.gz -C /opt && \
+    cd / && rm subread-${subread_version}-Linux-x86_64.tar.gz
+
+#Install Salmon
+RUN wget https://github.com/COMBINE-lab/salmon/releases/download/v${salmon_version}/salmon-${salmon_version}_linux_x86_64.tar.gz && \
+    tar -xvf salmon-${salmon_version}_linux_x86_64.tar.gz -C /opt && \
+    mv /opt/salmon-latest_linux_x86_64 /opt/salmon-${salmon_version}_linux_x86_64 && \ 
+    cd / && rm salmon-${salmon_version}_linux_x86_64.tar.gz
+
+ENV PATH="${PATH}:/opt/STAR-${star_version}/source:/opt/seqtk:/opt/bbmap:/opt/RSEM-${rsem_version}:/opt/salmon-${salmon_version}_linux_x86_64/bin:/opt/subread-${subread_version}-Linux-x86_64/bin"     
 
 #Saving Software Versions to a file
 RUN echo "STAR version: ${star_version}" >> versions.txt && \
-    echo "samtools version: ${samtools_version}" >> versions.txt && \
+    echo "Samtools version: ${samtools_version}" >> versions.txt && \
     echo "BBMap version: ${bbmap_version}" >> versions.txt && \
     echo "RSEM version: ${rsem_version}" >> versions.txt && \
+    echo "Salmon version: ${salmon_version}" >> versions.txt && \
+    echo "Subread version: ${subread_version}" >> versions.txt && \
     seqtk_version=`strings $(which seqtk) | grep 'Version:' | cut -f 2 -d " "` && \
     echo "seqtk version: ${seqtk_version}" >> versions.txt 
