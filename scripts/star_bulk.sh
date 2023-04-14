@@ -81,7 +81,7 @@ REV=`grep "^ENS" ReadsPerGene.out.tab | awk '{sum+=$4} END {printf "%d\n",sum}'`
 RTO1=$((FWD*100/UNS))
 RTO2=$((REV*100/UNS))
 
-echo "Strand-specificity evaluation, read counts: UNS = $UNS, FWD = $FWD, REV = $REV; FWD/UNS = $RTO1%, REV/UNS = $RTO2%"
+echo "Strand-specificity evaluation, read counts: UNS = $UNS, FWD = $FWD, REV = $REV; FWD/UNS = $RTO1%, REV/UNS = $RTO2%" > strand_info.txt
 
 if (( $RTO1 > 40 && $RTO1 < 60 && $RTO2 > 40 && $RTO2 < 60 )) 
 then
@@ -96,14 +96,21 @@ then
   STRAND="reverse"
   FCSTR="2"
 else 
-  >&2 echo "ERROR: Strand-specificity could not be determined! please examine the logs and metrics carefully."
+  >&2 echo "WARNING: Strand-specificity could not be determined! please examine the logs and metrics carefully."
+  STRAND="none"
+  FCSTR="0"
 fi 
 
-echo "Strand-specificity was determined to be: STRAND = $STRAND"
+echo "Strand-specificity was determined to be: STRAND = $STRAND" >> strand_info.txt
 
-## step 4 - quantify the expression using RSEM, featureCounts, and Salmon
+## step 4 - quantify the expression using RSEM, featureCounts, and Salmon (x2)
 
 $CMD rsem-calculate-expression --paired-end -p $CPUS --bam --estimate-rspd --seed 12345 --no-bam-output --strandedness $STRAND Aligned.toTranscriptome.out.bam $RREF $TAG.rsem &> $TAG.rsem.log
-$CMD featureCounts -p --countReadPairs -T $CPUS -t gene -g gene_id -s $FCSTR -a $GTF -o $TAG.feature_counts.tsv Aligned.sortedByCoord.out.bam &> $TAG.fcounts.log
+
+## featureCounts sorting always breaks something, so we'll have to settle for this solution: select only unique and concordantly mapped reads, and name-sort them. 
+$CMD samtools view -@$CPUS -F8 -d NH:1 -O BAM Aligned.sortedByCoord.out.bam | samtools sort -@$CPUS -n -O BAM - > Uniq_paired_namesorted.bam
+$CMD featureCounts -p --countReadPairs --donotsort -T $CPUS -t exon -g gene_id -s $FCSTR -a $GTF -o $TAG.feature_counts.tsv Uniq_paired_namesorted.bam &> $TAG.fcounts.log
+
+## finally, use Salmon to do the same thing as RSEM (salmon_aln), and selective-map to transcriptome (salmon_reads):
 $CMD salmon quant -p $CPUS -g $GTF -i $SALM -l A -1 $R1 -2 $R2 --validateMappings -o $TAG.salmon_reads &> $TAG.salmon_reads.log
 $CMD salmon quant -p $CPUS -g $GTF -t $RREF.idx.fa -l A -a Aligned.toTranscriptome.out.bam -o $TAG.salmon_aln &> $TAG.salmon_aln.log
