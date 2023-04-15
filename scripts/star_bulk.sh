@@ -16,6 +16,7 @@ SREF=/nfs/cellgeni/STAR/human/2020A-full/index
 RREF=/nfs/cellgeni/STAR/human/2020A-full/GRCh38_v32_rsem
 SALM=/nfs/cellgeni/STAR/human/2020A-full/GRCh38_v32_salmon
 GTF=/nfs/cellgeni/STAR/human/2020A-full/GRCh38_v32_modified.gtf
+ADAPTERS=/software/cellgeni/bbmap/resources/adapters.fa
 
 ## step 1 - adapter and quality trimming, with some polyA 
 ## version of bbduk geared towards bulk RNA-seq
@@ -23,7 +24,6 @@ GTF=/nfs/cellgeni/STAR/human/2020A-full/GRCh38_v32_modified.gtf
 ## 2) if there are multiple fastq files per sample, they will be input together 
 ## 3) resulting reads are not archived and should be processed faster
 
-ADAPTERS=/software/cellgeni/bbmap/resources/adapters.fa
 
 R1=""
 R2=""
