@@ -132,5 +132,8 @@ $CMD samtools view -@$CPUS -F8 -d NH:1 -O BAM Aligned.sortedByCoord.out.bam | sa
 $CMD featureCounts -p --countReadPairs --donotsort -T $CPUS -t exon -g gene_id -s $FCSTR -a $GTF -o $TAG.feature_counts.tsv Uniq_paired_namesorted.bam &> $TAG.fcounts.log
 
 ## finally, use Salmon to do the same thing as RSEM (salmon_aln), and selective-map to transcriptome (salmon_reads):
+## two lines below are because Salmon expects a space in case of multiple fastq files, while STAR/bowtie2/hisat2 etc use comma
+R1=`echo $R1 | tr ',' ' '`
+R2=`echo $R2 | tr ',' ' '`
 $CMD salmon quant -p $CPUS -g $GTF -i $SALM -l A -1 $R1 -2 $R2 --validateMappings -o $TAG.salmon_reads &> $TAG.salmon_reads.log
 $CMD salmon quant -p $CPUS -g $GTF -t $RREF.idx.fa -l A -a Aligned.toTranscriptome.out.bam -o $TAG.salmon_aln &> $TAG.salmon_aln.log
