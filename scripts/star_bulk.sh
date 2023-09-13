@@ -11,6 +11,13 @@ FQDIR=$1
 TAG=$2
 CPUS=16
 
+if [[ $FQDIR == "" || $TAG == "" ]]
+then
+  >&2 echo "Usage: ./star_bulk.sh <fastq_dir> <sample_id>"
+  >&2 echo "(make sure you set the correct reference/index variables below)"
+  exit 1
+fi
+
 FQDIR=`readlink -f $FQDIR`
 SREF=/nfs/cellgeni/STAR/human/2020A-full/index
 RREF=/nfs/cellgeni/STAR/human/2020A-full/GRCh38_v32_rsem
@@ -27,34 +34,47 @@ ADAPTERS=/software/cellgeni/bbmap/resources/adapters.fa
 
 R1=""
 R2=""
-if [[ `find $FQDIR/* | grep "\/$TAG" | grep "_1\.fastq"` != "" ]]
+if [[ `find $FQDIR/* | grep "\/$TAG\/" | grep "_1\.f.*q"` != "" ]]
 then 
-  R1=`find $FQDIR/* | grep "\/$TAG" | grep "_1\.fastq" | sort | tr '\n' ',' | sed "s/,$//g"`
-  R2=`find $FQDIR/* | grep "\/$TAG" | grep "_2\.fastq" | sort | tr '\n' ',' | sed "s/,$//g"`
-elif [[ `find $FQDIR/* | grep "\/$TAG" | grep "R1\.fastq"` != "" ]]
+  R1=`find $FQDIR/* | grep "\/$TAG\/" | grep "_1\.f.*q" | sort | tr '\n' ' ' | sed "s/ $//g"`
+  R2=`find $FQDIR/* | grep "\/$TAG\/" | grep "_2\.f.*q" | sort | tr '\n' ' ' | sed "s/ $//g"`
+elif [[ `find $FQDIR/* | grep "\/$TAG\/" | grep "R1\.f.*q"` != "" ]]
 then
-  R1=`find $FQDIR/* | grep "\/$TAG" | grep "R1\.fastq" | sort | tr '\n' ',' | sed "s/,$//g"`
-  R2=`find $FQDIR/* | grep "\/$TAG" | grep "R2\.fastq" | sort | tr '\n' ',' | sed "s/,$//g"`
-elif [[ `find $FQDIR/* | grep "\/$TAG" | grep "_R1_.*\.fastq"` != "" ]]
+  R1=`find $FQDIR/* | grep "\/$TAG\/" | grep "R1\.f.*q" | sort | tr '\n' ' ' | sed "s/ $//g"`
+  R2=`find $FQDIR/* | grep "\/$TAG\/" | grep "R2\.f.*q" | sort | tr '\n' ' ' | sed "s/ $//g"`
+elif [[ `find $FQDIR/* | grep "\/$TAG\/" | grep "_R1_.*\.f.*q"` != "" ]]
 then
-  R1=`find $FQDIR/* | grep "\/$TAG" | grep "_R1_" | sort | tr '\n' ',' | sed "s/,$//g"`
-  R2=`find $FQDIR/* | grep "\/$TAG" | grep "_R2_" | sort | tr '\n' ',' | sed "s/,$//g"`
+  R1=`find $FQDIR/* | grep "\/$TAG\/" | grep "_R1_" | sort | tr '\n' ' ' | sed "s/ $//g"`
+  R2=`find $FQDIR/* | grep "\/$TAG\/" | grep "_R2_" | sort | tr '\n' ' ' | sed "s/ $//g"`
 else 
   >&2 echo "ERROR: No appropriate fastq files were found! Please check file formatting, and check if you have set the right FQDIR."
   exit 1
 fi
+NF=`echo $R1 | grep -o " " | wc -l`
 
 if [[ ! -d bbduk_fastqs ]]
 then 
   mkdir bbduk_fastqs
 fi  
 
-$CMD bbduk.sh -Xmx100G in1=$R1 in2=$R2 out1=bbduk_fastqs/$TAG.bbduk.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.R2.fastq ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.log
+if (( $NF == 0 )) 
+then 
+  $CMD bbduk.sh -Xmx100G in1=$R1 in2=$R2 out1=bbduk_fastqs/$TAG.bbduk.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.R2.fastq ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.log
+else
+  >&2 echo "WARNING: Multiple fastq files found for sample $TAG. Processing them sequentially.." 
+  a=( $R1 ) 
+  b=( $R2 ) 
+  for i in `seq 0 $NF`
+  do
+    $CMD bbduk.sh -Xmx100G in1=${a[$i]} in2=${b[$i]} out1=bbduk_fastqs/$TAG.bbduk.$i.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.$i.R2.fastq ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.$i.log
+  done 
+fi 
 
-## redefine FQDIR and R1/R2
+
+## redefine FQDIR and R1/R2 (will work for multiple files too)
 FQDIR=`readlink -f bbduk_fastqs` 
-R1=$FQDIR/$TAG.bbduk.R1.fastq
-R2=$FQDIR/$TAG.bbduk.R2.fastq
+R1=`find $FQDIR/* | grep "$TAG\.bbduk" | grep "\.R1\.fastq" | sort | tr '\n' ',' | sed "s/,$//g"`
+R2=`find $FQDIR/* | grep "$TAG\.bbduk" | grep "\.R2\.fastq" | sort | tr '\n' ',' | sed "s/,$//g"`
 
 ## step 2 - align reads with STAR to genome/transcriptome
 
