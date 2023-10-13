@@ -1,5 +1,18 @@
 #!/bin/bash 
 
+## check that STAR temporary dir is removed for all samples, and that archived unmapped reads are created
+>&2 echo "Checking that all STAR jobs went to completion .." 
+for i in *
+do
+  if [[ -d $i && -s $i/Log.out ]]
+  then
+    if [[ -d $i/_STARtmp ]]
+    then
+      >&2 echo "WARNING: Sample $i did not run to completion: _STARtmp is still present!" 
+    fi
+  fi 
+done
+
 echo -e "Sample\tRead_len\tMapped_len\tN_reads\tN_uniq\tN_multi\tPct_uniq\tPct_M1\tPct_M2\tPct_U1\tPct_U2\tPct_U3\tSTAR_U\tFcounts\tRSEM\tSalmon_aln\tSalmon_reads"
 
 for i in *
