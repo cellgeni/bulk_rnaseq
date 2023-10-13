@@ -1,6 +1,7 @@
 #!/bin/bash 
 
 ## all Singularity, no bs
+## this is normally run alongside star_bulk.sh so you'd have your normal expression tables too 
 
 SIF="/nfs/cellgeni/singularity/images/starfusion-1.12.sif"
 CMD="singularity run --nv --bind /nfs,/lustre,/software $SIF"
