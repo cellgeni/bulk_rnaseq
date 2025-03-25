@@ -8,7 +8,7 @@ TAG=${AA[-1]}
 ## in case the last argument is a path, we only want the sample ID
 TAG=`basename $TAG` 
 
-GROUP=`bugroup -w | grep "\b${USER}\b" | cut -d" " -f1`
+GROUP=`id -gn`
 CPUS=16
 RAM=128000 
 QUE="normal"

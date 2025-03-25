@@ -11,9 +11,9 @@ TAG=$2
 CPUS=16
 
 FQDIR=`readlink -f $FQDIR`
-FREF="/nfs/cellgeni/STAR-Fusion/GRCh37_gencode_v19_CTAT_lib_Mar012021.plug-n-play/ctat_genome_lib_build_dir"
+FREF="/nfs/cellgeni/refdata_starfusion/GRCh38_gencode_v37_CTAT_lib_Mar012021.plug-n-play/ctat_genome_lib_build_dir"
 
-mkdir ${TAG}_fusion && cd ${TAG}_fusion
+mkdir -p ${TAG}_fusion && cd ${TAG}_fusion
 
 R1=$FQDIR/bbduk_fastqs/$TAG.bbduk.R1.fastq
 R2=$FQDIR/bbduk_fastqs/$TAG.bbduk.R2.fastq
