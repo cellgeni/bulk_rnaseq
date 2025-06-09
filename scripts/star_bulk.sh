@@ -52,10 +52,7 @@ else
 fi
 NF=`echo $R1 | grep -o " " | wc -l`
 
-if [[ ! -d bbduk_fastqs ]]
-then 
-  mkdir bbduk_fastqs
-fi  
+mkdir -p bbduk_fastqs
 
 if (( $NF == 0 )) 
 then 

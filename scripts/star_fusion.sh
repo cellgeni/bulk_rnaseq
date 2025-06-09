@@ -11,7 +11,7 @@ TAG=$2
 CPUS=16
 
 FQDIR=`readlink -f $FQDIR`
-FREF="/nfs/cellgeni/refdata_starfusion/GRCh38_gencode_v37_CTAT_lib_Mar012021.plug-n-play/ctat_genome_lib_build_dir"
+FREF="/nfs/cellgeni/refdata_starfusion/GRCh38_gencode_v37_CTAT_lib_Mar012021.plug-n-play/ctat_genome_lib_build_dir" 
 
 mkdir -p ${TAG}_fusion && cd ${TAG}_fusion
 
