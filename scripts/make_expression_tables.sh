@@ -21,8 +21,8 @@ do
     if [[ ! -f names.tmp ]]
     then
       ## run a quick failsafe thing 
-      NR=`grep -c "^ENS" $i/$i.rsem.genes.results`
-      NS=`grep -c "^ENS" $i/$i.salmon_reads/quant.genes.sf`
+      NR=`grep -c "^ENS" $i/rsem.genes.results`
+      NS=`grep -c "^ENS" $i/salmon_reads/quant.genes.sf`
       if (( $N != $NR || $N != $NS ))
       then
         >&2 echo "ERROR: Number of genes in RSEM and/or Salmon output does not match the number of genes in the GTF file ($GTF)! Please investigate."
@@ -31,7 +31,7 @@ do
     
       ## make a table of 4 cols: ENSEMBL ID, Gene symbol, gene length, and gene effective length. 
       echo -e "ensemblID\tgeneSymbol\tgeneLength\teffLength" > names.tmp
-      grep "^ENS" $i/$i.rsem.genes.results | sort -k1,1 | cut -f3,4 >> sorted_lengths.tmp
+      grep "^ENS" $i/rsem.genes.results | sort -k1,1 | cut -f3,4 >> sorted_lengths.tmp
       paste ensg_to_name.tsv sorted_lengths.tmp >> names.tmp
       rm sorted_lengths.tmp
     fi 
@@ -43,14 +43,14 @@ do
     echo $i > $i.sa2.tmp
     echo $i > $i.sr1.tmp
     echo $i > $i.sr2.tmp
-    grep "^ENS" $i/$i.feature_counts.tsv | sort -k1,1 | cut -f7 >> $i.fc.tmp
-    grep "^ENS" $i/$i.rsem.genes.results | sort -k1,1 | cut -f5 >> $i.r1.tmp
-    grep "^ENS" $i/$i.rsem.genes.results | sort -k1,1 | cut -f6 >> $i.r2.tmp
-    grep "^ENS" $i/$i.rsem.genes.results | sort -k1,1 | cut -f7 >> $i.r3.tmp
-    grep "^ENS" $i/$i.salmon_aln/quant.genes.sf | sort -k1,1 | cut -f5 >> $i.sa1.tmp
-    grep "^ENS" $i/$i.salmon_aln/quant.genes.sf | sort -k1,1 | cut -f4 >> $i.sa2.tmp
-    grep "^ENS" $i/$i.salmon_reads/quant.genes.sf | sort -k1,1 | cut -f5 >> $i.sr1.tmp
-    grep "^ENS" $i/$i.salmon_reads/quant.genes.sf | sort -k1,1 | cut -f4 >> $i.sr2.tmp
+    grep "^ENS" $i/feature_counts.tsv | sort -k1,1 | cut -f7 >> $i.fc.tmp
+    grep "^ENS" $i/rsem.genes.results | sort -k1,1 | cut -f5 >> $i.r1.tmp
+    grep "^ENS" $i/rsem.genes.results | sort -k1,1 | cut -f6 >> $i.r2.tmp
+    grep "^ENS" $i/rsem.genes.results | sort -k1,1 | cut -f7 >> $i.r3.tmp
+    grep "^ENS" $i/salmon_aln/quant.genes.sf | sort -k1,1 | cut -f5 >> $i.sa1.tmp
+    grep "^ENS" $i/salmon_aln/quant.genes.sf | sort -k1,1 | cut -f4 >> $i.sa2.tmp
+    grep "^ENS" $i/salmon_reads/quant.genes.sf | sort -k1,1 | cut -f5 >> $i.sr1.tmp
+    grep "^ENS" $i/salmon_reads/quant.genes.sf | sort -k1,1 | cut -f4 >> $i.sr2.tmp
   fi
 done 
 
@@ -65,4 +65,3 @@ paste names.tmp *.sr2.tmp > salmon_reads.TPM.tsv
 rm names.tmp *.fc.tmp *.r?.tmp *.s??.tmp 
 
 echo "ALL DONE!" 
-  
