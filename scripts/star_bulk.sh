@@ -11,9 +11,9 @@ set -euo pipefail
 
 if [[ $# -ne 2 ]]
 then
-  >&2 echo "Usage: ./star_bulk.sh <fastq_dir> <sample_id>"
-  >&2 echo "(make sure you set the correct reference/index variables below)"
-  exit 1
+    >&2 echo "Usage: ./star_bulk.sh <fastq_dir> <sample_id>"
+    >&2 echo "(make sure you set the correct reference/index variables below)"
+    exit 1
 fi
 
 FQDIR=$1
@@ -54,6 +54,7 @@ else
     >&2 echo "ERROR: No appropriate fastq files were found! Please check file formatting, and check if you have set the right FQDIR."
     exit 1
 fi
+## let's also calculate the number of separate read files (for SE) or read pairs. I don't want to waste time concatenating large files.
 NF=`echo $R1 | grep -o " " | wc -l || true`
 
 mkdir -p bbduk_fastqs
@@ -63,14 +64,16 @@ then
     if (( $NF == 0 )) 
     then
         echo "One set of PAIRED-END fastq files found for sample $TAG. Running bbduk.sh read trimming .." 
-        $CMD bbduk.sh -Xmx${RAM}G in1=$R1 in2=$R2 out1=bbduk_fastqs/$TAG.bbduk.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.R2.fastq ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.log
+        $CMD bbduk.sh -Xmx${RAM}G in1=$R1 in2=$R2 out1=bbduk_fastqs/$TAG.bbduk.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.R2.fastq \
+            ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.log
     else
         echo "Multiple sets of PAIRED-END fastq files found for sample $TAG. Running bbduk.sh read trimming sequentially .." 
         a=( $R1 ) 
         b=( $R2 ) 
         for i in `seq 0 $NF`
         do
-            $CMD bbduk.sh -Xmx${RAM}G in1=${a[$i]} in2=${b[$i]} out1=bbduk_fastqs/$TAG.bbduk.$i.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.$i.R2.fastq ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.$i.log
+            $CMD bbduk.sh -Xmx${RAM}G in1=${a[$i]} in2=${b[$i]} out1=bbduk_fastqs/$TAG.bbduk.$i.R1.fastq out2=bbduk_fastqs/$TAG.bbduk.$i.R2.fastq \
+                ref=$ADAPTERS trimpolya=10 ktrim=r k=23 mink=11 hdist=1 tpe tbo &> $TAG.bbduk.$i.log
         done 
     fi 
 else 
@@ -111,10 +114,12 @@ then
         --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverReadLmax 0.04 \
         --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMheaderCommentFile COfile.txt \
         --outSAMheaderHD @HD VN:1.4 SO:coordinate --outSAMunmapped Within --outFilterType BySJout \
-        --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --sjdbScore 1 \
-        --outBAMsortingBinsN 500 --limitBAMsortRAM ${RAM}000000000 --outMultimapperOrder Random --runRNGseed 1 --outSAMattributes All
-
+        --outSAMtype BAM Unsorted --quantMode TranscriptomeSAM GeneCounts --sjdbScore 1 \
+        --limitOutSJcollapsed 5000000 --outMultimapperOrder Random --runRNGseed 1 --outSAMattributes All
+    
+    $CMD samtools sort  -@$CPUS Aligned.out.bam > Aligned.sortedByCoord.out.bam
     $CMD samtools index -@$CPUS Aligned.sortedByCoord.out.bam
+    rm Aligned.out.bam
     
     ## step 3 - evaluate strand-specificity 
     
@@ -157,7 +162,8 @@ then
     echo "Making name-sorted paired-end BAM file and running read counting using featureCounts .." 
     $CMD samtools view -@$CPUS -F8 -d NH:1 -O BAM Aligned.sortedByCoord.out.bam | samtools sort -@$CPUS -n -O BAM - > Uniq_paired_namesorted.bam
     $CMD featureCounts -p --countReadPairs --donotsort -T $CPUS -t exon -g gene_id -s $FCSTR -a $GTF -o feature_counts.tsv Uniq_paired_namesorted.bam &> fcounts.log
-    
+    rm Uniq_paired_namesorted.bam
+
     ## finally, use Salmon to do the same thing as RSEM (salmon_aln), and selective-map to transcriptome (salmon_reads):
     ## two lines below are because Salmon expects a space in case of multiple fastq files, while STAR/bowtie2/hisat2 etc use comma
     R1=`echo $R1 | tr ',' ' '`
@@ -172,10 +178,12 @@ else
         --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outFilterMismatchNoverReadLmax 0.04 \
         --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --outSAMheaderCommentFile COfile.txt \
         --outSAMheaderHD @HD VN:1.4 SO:coordinate --outSAMunmapped Within --outFilterType BySJout \
-        --outSAMtype BAM SortedByCoordinate --quantMode TranscriptomeSAM GeneCounts --sjdbScore 1 \
-        --outBAMsortingBinsN 500 --limitBAMsortRAM ${RAM}000000000 --outMultimapperOrder Random --runRNGseed 1 --outSAMattributes All
+        --outSAMtype BAM Unsorted --quantMode TranscriptomeSAM GeneCounts --sjdbScore 1 \
+        --limitOutSJcollapsed 5000000 --outMultimapperOrder Random --runRNGseed 1 --outSAMattributes All
 
+    $CMD samtools sort  -@$CPUS Aligned.out.bam > Aligned.sortedByCoord.out.bam
     $CMD samtools index -@$CPUS Aligned.sortedByCoord.out.bam
+    rm Aligned.out.bam
     
     ## step 3 - evaluate strand-specificity 
     

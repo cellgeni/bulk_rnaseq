@@ -22,8 +22,8 @@ do
     if [[ -d $i && -s $i/Log.out ]]
     then
         PE="paired" 
-        NQ=`grep readFilesIn $i/Log.out | grep RE-DEFINED | tr ' ' '\n' | grep f.*q | wc -l`
-        if [[ $NQ == "1" ]]
+        NPR=`grep readFilesIn $i/Log.out | grep RE-DEFINED | tr ' ' '\n' | grep f.*q | wc -l`
+        if [[ $NPR == "1" ]]
         then
             PE="single"
         fi

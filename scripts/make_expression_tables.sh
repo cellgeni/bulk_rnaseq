@@ -5,7 +5,7 @@
 
 ## assume we have a featureCounts output done against the same GTF file 
 echo "Finding the appropriate GTF file and extracting ENSG-to-name relationships.."
-FCTSV=`find * | grep "\.feature_counts.tsv$" | head -n1`
+FCTSV=`find * | grep "feature_counts.tsv$" | head -n1`
 GTF=`head -n1 $FCTSV | tr '\"' '\n' | grep "gtf$"`
 echo "GTF file found: $GTF. Continuing.. "
 perl -ne 'print "$1\t$2\n" if (m/\tgene\t.*gene_id \"(.*?)\";.*gene_name \"(.*?)\";/)' $GTF | sort -k1,1 > ensg_to_name.tsv
@@ -65,3 +65,4 @@ paste names.tmp *.sr2.tmp > salmon_reads.TPM.tsv
 rm names.tmp *.fc.tmp *.r?.tmp *.s??.tmp 
 
 echo "ALL DONE!" 
+  
