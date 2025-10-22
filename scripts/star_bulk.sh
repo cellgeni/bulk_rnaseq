@@ -138,11 +138,11 @@ then
     then
         STRAND="none"
         FCSTR="0"
-    elif (( $RTO1 > 80 && $RTO2 < 20 )) 
+    elif (( $RTO1 > 80 )) 
     then
         STRAND="forward"
         FCSTR="1"
-    elif (( $RTO2 > 80 && $RTO1 < 20 )) 
+    elif (( $RTO2 > 80 )) 
     then
         STRAND="reverse"
         FCSTR="2"
@@ -153,6 +153,11 @@ then
     fi 
     
     echo "Strand-specificity was determined to be: STRAND = $STRAND" | tee -a strand.txt
+    echo "Below is the distribution of individual genes with > 0 reads by strand specificity:" | tee -a strand.txt
+    grep -v ^N_ ReadsPerGene.out.tab | awk '{if ($2>0) {print $4/$2}}' | \
+        awk '{bin = int($1 * 10); if (bin == 10) bin = 9; count[bin]++} END {for (i = 0; i < 10; i++) printf "%.1f\t%d\n", (i+1)/10, count[i]+0}' | \
+        gnuplot -e "set terminal dumb size 90, 30; set title 'N genes, reverse/unstranded ratio (0 = forward, 1 = reverse, 0.5 = unstranded)'; \
+        set autoscale; plot '-' using 2:xtic(1) with lines notitle" | tee -a strand.txt
     
     ## step 4 - quantify the expression using RSEM, featureCounts, and Salmon (x2)
     echo "Running read counting using RSEM on a transcriptome BAM .." 
@@ -202,11 +207,11 @@ else
     then
         STRAND="none"
         FCSTR="0"
-    elif (( $RTO1 > 80 && $RTO2 < 20 )) 
+    elif (( $RTO1 > 80 )) 
     then
         STRAND="forward"
         FCSTR="1"
-    elif (( $RTO2 > 80 && $RTO1 < 20 )) 
+    elif (( $RTO2 > 80 )) 
     then
         STRAND="reverse"
         FCSTR="2"
@@ -217,6 +222,11 @@ else
     fi 
     
     echo "Strand-specificity was determined to be: STRAND = $STRAND" | tee -a strand.txt
+    echo "Below is the distribution of individual genes with > 0 reads by strand specificity:" | tee -a strand.txt
+    grep -v ^N_ ReadsPerGene.out.tab | awk '{if ($2>0) {print $4/$2}}' | \
+        awk '{bin = int($1 * 10); if (bin == 10) bin = 9; count[bin]++} END {for (i = 0; i < 10; i++) printf "%.1f\t%d\n", (i+1)/10, count[i]+0}' | \
+        gnuplot -e "set terminal dumb size 90, 30; set title 'N genes, reverse/unstranded ratio (0 = forward, 1 = reverse, 0.5 = unstranded)'; \
+        set autoscale; plot '-' using 2:xtic(1) with lines notitle" | tee -a strand.txt
     
     ## step 4 - quantify the expression using RSEM, featureCounts, and Salmon (x2)
     

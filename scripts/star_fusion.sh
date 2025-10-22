@@ -1,11 +1,11 @@
 #!/bin/bash 
 
 set -euo pipefail
-## all Singularity, no bs
-## paired-end only for now I think 
-## this is normally run alongside star_bulk.sh so you'd have your normal expression tables too 
+## only paired-end reads are explicitly supported but can be run on SE (just remove --right_fq) 
+## v1.15 / Gencode v37 / GRCh38 are the default now 
+## use ~/bin/fusion_cleanup.sh to cleanup the outputs 
 
-SIF="/nfs/cellgeni/singularity/images/starfusion-1.12.sif"
+SIF="/nfs/cellgeni/singularity/images/starfusion-1.15.0.sif"
 CMD="singularity run --nv --bind /nfs,/lustre,/software $SIF"
 
 TAG=$1
